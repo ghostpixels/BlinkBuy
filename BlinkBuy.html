@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BlinkBuy MVP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input, textarea, button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #000;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .preview {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Create Your Product Link</h2>
+        <form id="productForm">
+            <label for="productImage">Upload Image</label>
+            <input type="file" id="productImage" accept="image/*" required>
+
+            <label for="productTitle">Product Title</label>
+            <input type="text" id="productTitle" placeholder="e.g. 1-on-1 Coaching Session" required>
+
+            <label for="productDescription">Description</label>
+            <textarea id="productDescription" placeholder="Short description..." required></textarea>
+
+            <label for="productPrice">Price (AUD)</label>
+            <input type="number" id="productPrice" placeholder="e.g. 50" required>
+
+            <button type="submit">Generate Link</button>
+        </form>
+
+        <div class="preview" id="previewSection">
+            <h3>Preview</h3>
+            <img id="previewImage" style="width: 100%; max-height: 300px; object-fit: cover;">
+            <p id="previewTitle"></p>
+            <p id="previewDescription"></p>
+            <p id="previewPrice"></p>
+            <a id="checkoutLink" href="#" target="_blank">Buy Now</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('productTitle').value;
+            const description = document.getElementById('productDescription').value;
+            const price = document.getElementById('productPrice').value;
+            const image = document.getElementById('productImage').files[0];
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('previewImage').src = event.target.result;
+            };
+            reader.readAsDataURL(image);
+
+            const previewSection = document.getElementById('previewSection');
+            document.getElementById('previewTitle').innerText = title;
+            document.getElementById('previewDescription').innerText = description;
+            document.getElementById('previewPrice').innerText = `Price: $${price} AUD`;
+
+            try {
+                const response = await fetch('/.netlify/functions/createCheckout', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, description, price })
+                });
+
+                const data = await response.json();
+                if (data.url) {
+                    document.getElementById('checkoutLink').href = data.url;
+                    previewSection.style.display = 'block';
+                } else {
+                    alert("Error creating checkout session.");
+                }
+            } catch (err) {
+                console.error("Stripe call failed:", err);
+                alert("Failed to create checkout link.");
+            }
+        });
+    </script>
+</body>
+</html>
